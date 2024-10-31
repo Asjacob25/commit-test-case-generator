@@ -1,15 +1,14 @@
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.*;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.mockito.MockitoAnnotations;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.*;
 
 public class RockPaperScissorsTest {
 
@@ -47,16 +46,48 @@ public class RockPaperScissorsTest {
 
     @Test
     public void testGetComputerChoice_ValidChoices() {
-        // This test cannot mock Random's behavior without altering the method's access to Random.
-        // However, it will call the method to ensure it doesn't throw an exception and returns a valid choice.
         String choice = RockPaperScissors.getComputerChoice();
         boolean isValid = choice.equals("rock") || choice.equals("paper") || choice.equals("scissors");
         assertEquals(true, isValid);
     }
 
-    // Testing getUserChoice is difficult due to its reliance on System.in and System.out.
-    // An alternative approach involves redesigning the method to support dependency injection for testing.
+    @Test
+    public void testDetermineWinner_InvalidUserInput() {
+        String result = RockPaperScissors.determineWinner("lizard", "scissors");
+        assertEquals("Invalid input. Please enter rock, paper, or scissors.", result);
+    }
 
-    // This demonstrates basic tests for the static methods. Ideally, the class should be refactored for better testability,
-    // including not using static methods, which would allow for more effective use of mocking frameworks like Mockito.
+    @Test
+    public void testDetermineWinner_InvalidComputerInput() {
+        // As determineWinner method doesn't validate computer choice, this test ensures future implementation handles invalid inputs.
+        String result = RockPaperScissors.determineWinner("rock", "lizard");
+        assertEquals("Error: Computer choice is invalid.", result);
+    }
+
+    // Test getUserChoice method - assuming redesign for dependency injection or input/output abstraction for testing.
+    @Test
+    public void testGetUserChoice_ValidInput() {
+        ByteArrayInputStream in = new ByteArrayInputStream("rock".getBytes());
+        System.setIn(in);
+        // Assuming getUserChoice now returns a String for the sake of testing
+        String userChoice = RockPaperScissors.getUserChoice();
+        assertEquals("rock", userChoice);
+    }
+
+    @Test
+    public void testGetUserChoice_InvalidInput() {
+        // Assuming functionality to handle invalid inputs is added
+        ByteArrayInputStream in = new ByteArrayInputStream("gun".getBytes());
+        System.setIn(in);
+        // Assuming getUserChoice now returns a String or uses a mechanism to retry until a valid input is provided
+        String userChoice = RockPaperScissors.getUserChoice();
+        assertEquals("Invalid input. Please enter rock, paper, or scissors.", userChoice);
+    }
+
+    // Ensure cleanup
+    @After
+    public void restoreStreams() {
+        System.setOut(originalOut);
+        System.setIn(System.in);
+    }
 }
