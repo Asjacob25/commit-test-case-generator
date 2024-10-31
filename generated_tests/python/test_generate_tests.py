@@ -1,103 +1,117 @@
-Given the complexity and multiple functionalities of the provided Python script, the unit tests will be divided into several parts to cover various components like environment variable loading, file handling, API interaction, and more. 
-
-This example will demonstrate how to use `pytest`, along with `unittest.mock` for mocking external dependencies like `requests.post` and `os.getenv`.
-
-### Prerequisites
-
-First, ensure `pytest` and `requests-mock` are installed in your environment:
-
-```bash
-pip install pytest requests-mock
-```
-
-### Test Code
-
-```python
 import pytest
-import os
-from unittest.mock import patch, mock_open
+from unittest.mock import patch, MagicMock
 from requests.exceptions import RequestException
-from your_module import TestGenerator  # Assuming the script is named your_module.py
+from your_module import TestGenerator
 
-# Mocking environment variables
+# Fixture for setting up environment variables
 @pytest.fixture(autouse=True)
-def mock_env_vars():
-    with patch.dict(os.environ, {
+def setup_env_vars():
+    with patch.dict("os.environ", {
         "OPENAI_API_KEY": "test_api_key",
         "OPENAI_MODEL": "test_model",
         "OPENAI_MAX_TOKENS": "100"
     }):
         yield
 
-# Mock sys.argv for testing command line arguments
+# Fixture for mocking file content
 @pytest.fixture
-def mock_sys_argv(monkeypatch):
-    monkeypatch.setattr("sys.argv", ["script_name", "test_file.py test_file2.js"])
+def mock_file_content():
+    with patch("builtins.open", mock_open(read_data="test code")) as mocked_file:
+        yield mocked_file
 
-# Test initialization and environment variable handling
-def test_init():
-    # Test successful initialization
-    generator = TestGenerator()
-    assert generator.api_key == "test_api_key"
-    assert generator.model == "test_model"
-    assert generator.max_tokens == 100
+# Test initialization and environment variable loading
+def test_initialization_with_correct_env_vars():
+    """Test initialization reads and sets environment variables correctly."""
+    tg = TestGenerator()
+    assert tg.api_key == "test_api_key"
+    assert tg.model == "test_model"
+    assert tg.max_tokens == 100
 
-    # Test initialization with invalid max tokens
-    with patch.dict(os.environ, {"OPENAI_MAX_TOKENS": "invalid"}):
-        with pytest.raises(SystemExit):
-            TestGenerator()
-
-    # Test initialization without API key
-    with patch.dict(os.environ, {"OPENAI_API_KEY": ""}):
+def test_initialization_fails_without_api_key():
+    """Test initialization fails without API key."""
+    with patch.dict("os.environ", {"OPENAI_API_KEY": ""}):
         with pytest.raises(ValueError):
             TestGenerator()
 
-# Test get_changed_files
+def test_initialization_fails_with_invalid_max_tokens():
+    """Test initialization fails with invalid max tokens."""
+    with patch.dict("os.environ", {"OPENAI_MAX_TOKENS": "not_a_number"}):
+        with pytest.raises(SystemExit):
+            TestGenerator()
+
+# Test command line argument parsing
 def test_get_changed_files(mock_sys_argv):
-    generator = TestGenerator()
-    assert generator.get_changed_files() == ["test_file.py", "test_file2.js"]
+    """Test extraction of changed files from command line arguments."""
+    tg = TestGenerator()
+    assert tg.get_changed_files() == ["test_file.py", "test_file2.js"]
 
-# Test detect_language
-@pytest.mark.parametrize("file_name, expected_language", [
-    ("file.py", "Python"),
-    ("file.js", "JavaScript"),
-    ("file.unknown", "Unknown")
+# Test language detection
+@pytest.mark.parametrize("file, expected_language", [
+    ("test.py", "Python"),
+    ("test.js", "JavaScript"),
+    ("unknown.ext", "Unknown")
 ])
-def test_detect_language(file_name, expected_language):
-    generator = TestGenerator()
-    assert generator.detect_language(file_name) == expected_language
+def test_detect_language(file, expected_language):
+    """Test language detection based on file extension."""
+    tg = TestGenerator()
+    assert tg.detect_language(file) == expected_language
 
-# Test create_prompt with file read error
-@patch("builtins.open", new_callable=mock_open, read_data="test code")
-def test_create_prompt_file_error(mock_file):
-    generator = TestGenerator()
+# Test file reading error handling in create_prompt
+def test_create_prompt_handles_file_read_error(mock_file_content):
+    """Test create_prompt handles file read errors gracefully."""
+    mock_file_content.side_effect = Exception("File read error")
+    tg = TestGenerator()
     with patch("your_module.logging.error") as mock_log_error:
-        mock_file.side_effect = Exception("File read error")
-        result = generator.create_prompt("non_existent_file.py", "Python")
-        assert result is None
+        assert tg.create_prompt("nonexistent_file.py", "Python") is None
         mock_log_error.assert_called_once()
 
-# Test call_openai_api with success and failure scenarios
+# Test OpenAI API call success and failure
 @patch("requests.post")
-def test_call_openai_api(mock_post):
-    generator = TestGenerator()
-    mock_response = mock_post.return_value
-    mock_response.json.return_value = {
-        "choices": [
-            {"message": {"content": "Test content"}}
-        ]
-    }
-    assert generator.call_openai_api("Sample prompt") == "Test content"
+def test_call_openai_api_success(mock_post):
+    """Test successful OpenAI API call."""
+    mock_response = MagicMock()
+    mock_response.json.return_value = {"choices": [{"message": {"content": "Test content"}}]}
+    mock_post.return_value = mock_response
 
-    # Test API call failure
+    tg = TestGenerator()
+    result = tg.call_openai_api("Sample prompt")
+    assert result == "Test content"
+
+@patch("requests.post")
+def test_call_openai_api_failure(mock_post):
+    """Test failure of OpenAI API call."""
     mock_post.side_effect = RequestException("API request failed")
+
+    tg = TestGenerator()
     with patch("your_module.logging.error") as mock_log_error:
-        assert generator.call_openai_api("Sample prompt") is None
+        assert tg.call_openai_api("Sample prompt") is None
         mock_log_error.assert_called_once()
 
-# Add more tests for save_test_cases and run method as needed, following similar patterns for mocking and assertions.
-```
+# Example of a test for save_test_cases method (assuming its implementation)
+@patch("builtins.open", new_callable=mock_open)
+def test_save_test_cases(mock_open):
+    """Test saving test cases to a file."""
+    tg = TestGenerator()
+    tg.save_test_cases("test_file.py", "Test content")
+    mock_open.assert_called_once_with("test_file_test_cases.py", "w")
+    mock_open().write.assert_called_once_with("Test content")
 
-This set of unit tests covers initialization, handling of environment variables, basic functionalities like language detection, and handling API responses, including error conditions. Further tests, especially for `save_test_cases` and `run`, would follow a similar pattern of mocking file system operations and external calls. 
+# Example of a test for the run method (assuming its implementation and dependencies)
+@patch("your_module.TestGenerator.call_openai_api")
+@patch("your_module.TestGenerator.create_prompt")
+@patch("your_module.TestGenerator.detect_language")
+@patch("your_module.TestGenerator.get_changed_files")
+def test_run(mock_get_changed_files, mock_detect_language, mock_create_prompt, mock_call_openai_api):
+    """Test the run method processes files and interacts with the OpenAI API."""
+    mock_get_changed_files.return_value = ["test_file.py"]
+    mock_detect_language.return_value = "Python"
+    mock_create_prompt.return_value = "Test prompt"
+    mock_call_openai_api.return_value = "Test response"
 
-Ensure you adapt the test cases to fit the actual paths and module names used in your project.
+    tg = TestGenerator()
+    tg.run()
+
+    mock_get_changed_files.assert_called_once()
+    mock_detect_language.assert_called_once_with("test_file.py")
+    mock_create_prompt.assert_called_once_with("test_file.py", "Python")
+    mock_call_openai_api.assert_called_once_with("Test prompt")
