@@ -5,7 +5,7 @@ import logging
 import json
 from pathlib import Path
 from requests.exceptions import RequestException
-from typing import List, Optional, Dict, Any
+from typing import List, Optional
 
 # Set up logging
 logging.basicConfig(
@@ -24,8 +24,6 @@ class TestGenerator:
            logging.error("Invalid value for OPENAI_MAX_TOKENS. Using default value: 2000")
            self.max_tokens = 2000
 
-
-       
        if not self.api_key:
            raise ValueError("OPENAI_API_KEY environment variable is not set")
 
@@ -42,7 +40,7 @@ class TestGenerator:
            '.js': 'JavaScript',
            '.ts': 'TypeScript',
            '.java': 'Java',
-           '.cpp':'C++',
+           '.cpp': 'C++',
            '.cs': 'C#'
        }
        _, ext = os.path.splitext(file_name)
@@ -60,13 +58,53 @@ class TestGenerator:
        }
        return frameworks.get(language, 'unknown')
 
-   def create_prompt(self, file_name: str, language: str) -> Optional[str]:
-       """Create a language-specific prompt for test generation."""
+   def extract_relevant_code(self, file_name: str) -> Optional[str]:
+       """
+       Extracts only the modified functions, classes, and their immediate dependencies
+       from the provided file. Uses Python's AST for parsing to make it language-specific.
+       """
        try:
            with open(file_name, 'r') as f:
                code_content = f.read()
+
+           # Parse the code into an AST tree
+           tree = ast.parse(code_content)
+           
+           # Collect relevant code blocks
+           relevant_code = []
+           function_names = set()
+
+           # First, find all top-level function and class definitions
+           for node in tree.body:
+               if isinstance(node, (ast.FunctionDef, ast.ClassDef)):
+                   function_names.add(node.name)
+           
+           # Second, extract the relevant definitions and dependencies
+           for node in tree.body:
+               if isinstance(node, (ast.FunctionDef, ast.ClassDef)):
+                   if node.name in function_names:
+                       relevant_code.append(ast.get_source_segment(code_content, node))
+                       # Capture any imported modules or classes if they are dependencies
+
+               elif isinstance(node, ast.Import) or isinstance(node, ast.ImportFrom):
+                   # Include import statements relevant to the functions/classes
+                   relevant_code.append(ast.get_source_segment(code_content, node))
+
+           # Join the relevant code segments into a single string
+           extracted_code = "\n\n".join(relevant_code)
+
+           logging.info(f"Extracted relevant code for {file_name}")
+           return extracted_code if extracted_code else None
+
        except Exception as e:
-           logging.error(f"Error reading file {file_name}: {e}")
+           logging.error(f"Error reading or extracting code from {file_name}: {e}")
+           return None
+
+   def create_prompt(self, file_name: str, language: str) -> Optional[str]:
+       """Create a language-specific prompt for test generation using selective context extraction."""
+       relevant_code = self.extract_relevant_code(file_name)
+       if not relevant_code:
+           logging.error(f"No relevant code extracted from {file_name}")
            return None
 
        framework = self.get_test_framework(language)
@@ -85,7 +123,7 @@ Requirements:
 
 Code to test:
 
-{code_content}
+{relevant_code}
 
 Generate only the test code without any explanations or notes."""
 
@@ -112,7 +150,7 @@ Generate only the test code without any explanations or notes."""
                }
            ],
            'max_tokens': self.max_tokens,
-           'temperature': 0.7  # Balance between creativity and consistency
+           'temperature': 0.7
        }
 
        try:
@@ -125,64 +163,38 @@ Generate only the test code without any explanations or notes."""
            response.raise_for_status()
            generated_text = response.json()['choices'][0]['message']['content']
 
-           # Replace curly quotes with straight quotes
+           # Clean up output
            normalized_text = generated_text.replace('“', '"').replace('”', '"').replace("‘", "'").replace("’", "'")
-
-           # Remove markdown code blocks if present
            if normalized_text.startswith('```'):
-               # Find the index of the first newline after ```
                first_newline_index = normalized_text.find('\n', 3)
-               if first_newline_index != -1:
-                   # Remove the ``` and language identifier line
-                   normalized_text = normalized_text[first_newline_index+1:]
-               else:
-                   # If there's no newline, remove the first line
-                   normalized_text = normalized_text[3:]
-               # Remove the ending ```
+               normalized_text = normalized_text[first_newline_index+1:] if first_newline_index != -1 else normalized_text[3:]
                if normalized_text.endswith('```'):
                    normalized_text = normalized_text[:-3]
-
-           # Strip any leading/trailing whitespace
-           normalized_text = normalized_text.strip()
-
-           return normalized_text
+           return normalized_text.strip()
        except RequestException as e:
            logging.error(f"API request failed: {e}")
            return None
 
-
    def save_test_cases(self, file_name: str, test_cases: str, language: str):
        """Save generated test cases to appropriate directory structure."""
-       # Ensure the tests directory exists
        tests_dir = Path('generated_tests')
        tests_dir.mkdir(exist_ok=True)
 
-       # Create language-specific subdirectory
        lang_dir = tests_dir / language.lower()
        lang_dir.mkdir(exist_ok=True)
 
-       # Check if the file name already begins with 'test_', if not, prepend it
        base_name = Path(file_name).stem
        if not base_name.startswith("test_"):
            base_name = f"test_{base_name}"
        extension = '.js' if language == 'JavaScript' else Path(file_name).suffix
        test_file = lang_dir / f"{base_name}{extension}"
 
-       # Decide the mode - 'a' for append, 'w' for overwrite
-       file_mode = 'w'  # Change to 'a' if you want to append to existing tests
-
        try:
-           with open(test_file, file_mode, encoding='utf-8') as f:
+           with open(test_file, 'w', encoding='utf-8') as f:
                f.write(test_cases)
            logging.info(f"Test cases saved to {test_file}")
        except Exception as e:
            logging.error(f"Error saving test cases to {test_file}: {e}")
-
-       if test_file.exists():
-           logging.info(f"File {test_file} exists with size {test_file.stat().st_size} bytes.")
-       else:
-           logging.error(f"File {test_file} was not created.")
-
 
    def run(self):
        """Main execution method."""
@@ -202,10 +214,8 @@ Generate only the test code without any explanations or notes."""
                prompt = self.create_prompt(file_name, language)
                
                if prompt:
-                   # Generate test cases from the API
                    test_cases = self.call_openai_api(prompt)
                    
-                   # Clean up quotation marks if test cases were generated
                    if test_cases:
                        test_cases = test_cases.replace("“", '"').replace("”", '"')
                        self.save_test_cases(file_name, test_cases, language)
@@ -213,7 +223,6 @@ Generate only the test code without any explanations or notes."""
                        logging.error(f"Failed to generate test cases for {file_name}")
            except Exception as e:
                logging.error(f"Error processing {file_name}: {e}")
-
 
 if __name__ == '__main__':
    try:
