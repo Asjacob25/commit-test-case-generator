@@ -57,34 +57,47 @@ class TestGenerator:
            'C#': 'NUnit'
        }
        return frameworks.get(language, 'unknown')
-
+   
+   def resolve_import(self, module_name: str, current_file: str) -> Optional[str]:
+        """Resolve the import statement to find the corresponding file."""
+        current_dir = Path(current_file).parent
+        # Convert the module name to a path
+        module_parts = module_name.split('.')
+        potential_file = current_dir.joinpath(*module_parts)  # Join the directory and module parts
+        for ext in ('.py', '.js', '.ts', '.java', '.cpp', '.cs'):
+            if (potential_file.with_suffix(ext).exists()):
+                return str(potential_file.with_suffix(ext))  # Return the found file
+        return None
+   
    def get_related_files(self, file_name: str) -> List[str]:
-        """Identify related files based on import statements or includes."""
+        """Identify related files based on import statements or includes, including from other directories."""
         related_files = []
         try:
             with open(file_name, 'r') as f:
                 for line in f:
-                    # Example: Detecting imports in Python and JavaScript/TypeScript
-                    if 'import ' in line or 'from ' in line or 'require(' in line:
+                    # Example: Detecting imports in Python
+                    if 'import ' in line or 'from ' in line:
                         parts = line.split()
                         for part in parts:
-                            # Check for file extensions
-                            if part.endswith(('.py', '.js', '.ts', '.java', '.cpp', '.cs')) and Path(part).exists():
-                                related_files.append(part)
-                            # Check for class/module names without extensions
-                            elif part.isidentifier():  # Checks if part is a valid identifier
-                                # Construct potential file names
-                                base_name = part.lower()  # Assuming file names are in lowercase
-                                for ext in ('.py', '.js', '.ts', '.java', '.cpp', '.cs'):
-                                    potential_file = f"{base_name}{ext}"
-                                    if Path(potential_file).exists():
-                                        related_files.append(potential_file)
-                                        break  # Found a related file, no need to check further extensions
+                            # Handle imports like `from module import something`
+                            if part.startswith('from'):
+                                # Get the module name
+                                module = parts[1]  # the module name is the second part
+                                potential_file = self.resolve_import(module, file_name)
+                                if potential_file:
+                                    related_files.append(potential_file)
+                            elif part.startswith('import'):
+                                # Get the module name
+                                module = part.split('.')[1] if '.' in part else part.split()[1]  # Module name after import
+                                potential_file = self.resolve_import(module, file_name)
+                                if potential_file:
+                                    related_files.append(potential_file)
 
         except Exception as e:
             logging.error(f"Error identifying related files in {file_name}: {e}")
 
         return list(set(related_files))  # Remove duplicates
+   
 
 
    def create_prompt(self, file_name: str, language: str) -> Optional[str]:
@@ -230,7 +243,7 @@ class TestGenerator:
                prompt = self.create_prompt(file_name, language)
                
                if prompt:
-                   test_cases = self.call_openai_api(prompt)
+                   #test_cases = self.call_openai_api(prompt)
                    
                    if test_cases:
                        test_cases = test_cases.replace("“", '"').replace("”", '"')
