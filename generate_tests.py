@@ -69,22 +69,38 @@ class TestGenerator:
                         parts = line.split()
                         for part in parts:
                             # Check for file extensions
-                            if part.endswith(('.py', '.js', '.ts', '.java', '.cpp', '.cs')) and Path(part).exists():
-                                related_files.append(part)
+                            if part.endswith(('.py', '.js', '.ts', '.java', '.cpp', '.cs')):
+                                # Use Path to construct a relative path
+                                related_path = Path(part)
+                                if related_path.is_file():  # Check if the file exists in the same directory
+                                    related_files.append(str(related_path))
+                                else:
+                                    # If not found, check in the project root or other common directories
+                                    for ext in ('.py', '.js', '.ts', '.java', '.cpp', '.cs'):
+                                        potential_file = related_path.with_suffix(ext)
+                                        # Check for different directory structure
+                                        for root, dirs, files in os.walk(Path('.')):
+                                            if potential_file.name in files:
+                                                related_files.append(os.path.join(root, potential_file.name))
+                                                break  # Stop searching after finding the first match
+
                             # Check for class/module names without extensions
                             elif part.isidentifier():  # Checks if part is a valid identifier
                                 # Construct potential file names
                                 base_name = part.lower()  # Assuming file names are in lowercase
                                 for ext in ('.py', '.js', '.ts', '.java', '.cpp', '.cs'):
                                     potential_file = f"{base_name}{ext}"
-                                    if Path(potential_file).exists():
-                                        related_files.append(potential_file)
-                                        break  # Found a related file, no need to check further extensions
+                                    # Search in the project root or other common directories
+                                    for root, dirs, files in os.walk(Path('.')):
+                                        if potential_file in files:
+                                            related_files.append(os.path.join(root, potential_file))
+                                            break  # Stop searching after finding the first match
 
         except Exception as e:
             logging.error(f"Error identifying related files in {file_name}: {e}")
 
         return list(set(related_files))  # Remove duplicates
+
 
 
    def create_prompt(self, file_name: str, language: str) -> Optional[str]:
@@ -230,7 +246,7 @@ class TestGenerator:
                prompt = self.create_prompt(file_name, language)
                
                if prompt:
-                   test_cases = self.call_openai_api(prompt)
+                   #test_cases = self.call_openai_api(prompt)
                    
                    if test_cases:
                        test_cases = test_cases.replace("“", '"').replace("”", '"')
