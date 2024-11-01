@@ -5,7 +5,7 @@ import logging
 import json
 from pathlib import Path
 from requests.exceptions import RequestException
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 
 # Set up logging
 logging.basicConfig(
@@ -40,7 +40,7 @@ class TestGenerator:
            '.js': 'JavaScript',
            '.ts': 'TypeScript',
            '.java': 'Java',
-           '.cpp': 'C++',
+           '.cpp':'C++',
            '.cs': 'C#'
        }
        _, ext = os.path.splitext(file_name)
@@ -58,54 +58,40 @@ class TestGenerator:
        }
        return frameworks.get(language, 'unknown')
 
-   def extract_relevant_code(self, file_name: str) -> Optional[str]:
-       """
-       Extracts only the modified functions, classes, and their immediate dependencies
-       from the provided file. Uses Python's AST for parsing to make it language-specific.
-       """
+   def get_related_files(self, file_name: str) -> List[str]:
+       """Identify related files based on import statements or includes."""
+       related_files = []
+       try:
+           with open(file_name, 'r') as f:
+               for line in f:
+                   # Example: Detecting imports in Python and JavaScript/TypeScript
+                   if 'import ' in line or 'from ' in line:
+                       parts = line.split()
+                       for part in parts:
+                           if part.endswith(('.py', '.js', '.ts', '.java', '.cpp', '.cs')) and Path(part).exists():
+                               related_files.append(part)
+       except Exception as e:
+           logging.error(f"Error identifying related files in {file_name}: {e}")
+       return list(set(related_files))  # Remove duplicates
+
+   def create_prompt(self, file_name: str, language: str) -> Optional[str]:
+       """Create a language-specific prompt for test generation."""
        try:
            with open(file_name, 'r') as f:
                code_content = f.read()
-
-           # Parse the code into an AST tree
-           tree = ast.parse(code_content)
-           
-           # Collect relevant code blocks
-           relevant_code = []
-           function_names = set()
-
-           # First, find all top-level function and class definitions
-           for node in tree.body:
-               if isinstance(node, (ast.FunctionDef, ast.ClassDef)):
-                   function_names.add(node.name)
-           
-           # Second, extract the relevant definitions and dependencies
-           for node in tree.body:
-               if isinstance(node, (ast.FunctionDef, ast.ClassDef)):
-                   if node.name in function_names:
-                       relevant_code.append(ast.get_source_segment(code_content, node))
-                       # Capture any imported modules or classes if they are dependencies
-
-               elif isinstance(node, ast.Import) or isinstance(node, ast.ImportFrom):
-                   # Include import statements relevant to the functions/classes
-                   relevant_code.append(ast.get_source_segment(code_content, node))
-
-           # Join the relevant code segments into a single string
-           extracted_code = "\n\n".join(relevant_code)
-
-           logging.info(f"Extracted relevant code for {file_name}")
-           return extracted_code if extracted_code else None
-
        except Exception as e:
-           logging.error(f"Error reading or extracting code from {file_name}: {e}")
+           logging.error(f"Error reading file {file_name}: {e}")
            return None
 
-   def create_prompt(self, file_name: str, language: str) -> Optional[str]:
-       """Create a language-specific prompt for test generation using selective context extraction."""
-       relevant_code = self.extract_relevant_code(file_name)
-       if not relevant_code:
-           logging.error(f"No relevant code extracted from {file_name}")
-           return None
+       # Gather additional context from related files
+       related_files = self.get_related_files(file_name)
+       related_content = ""
+       for related_file in related_files:
+           try:
+               with open(related_file, 'r') as rf:
+                   related_content += f"\n\n// Related file: {related_file}\n" + rf.read()
+           except Exception as e:
+               logging.error(f"Error reading related file {related_file}: {e}")
 
        framework = self.get_test_framework(language)
        
@@ -119,11 +105,14 @@ Requirements:
 5. Follow {framework} best practices
 6. Ensure high code coverage
 7. Test both success and failure scenarios
-8. Make sure to include comments in the code
 
 Code to test:
 
-{relevant_code}
+{code_content}
+
+Related context:
+
+{related_content}
 
 Generate only the test code without any explanations or notes."""
 
@@ -162,12 +151,13 @@ Generate only the test code without any explanations or notes."""
            )
            response.raise_for_status()
            generated_text = response.json()['choices'][0]['message']['content']
-
-           # Clean up output
            normalized_text = generated_text.replace('“', '"').replace('”', '"').replace("‘", "'").replace("’", "'")
            if normalized_text.startswith('```'):
                first_newline_index = normalized_text.find('\n', 3)
-               normalized_text = normalized_text[first_newline_index+1:] if first_newline_index != -1 else normalized_text[3:]
+               if first_newline_index != -1:
+                   normalized_text = normalized_text[first_newline_index+1:]
+               else:
+                   normalized_text = normalized_text[3:]
                if normalized_text.endswith('```'):
                    normalized_text = normalized_text[:-3]
            return normalized_text.strip()
@@ -179,10 +169,8 @@ Generate only the test code without any explanations or notes."""
        """Save generated test cases to appropriate directory structure."""
        tests_dir = Path('generated_tests')
        tests_dir.mkdir(exist_ok=True)
-
        lang_dir = tests_dir / language.lower()
        lang_dir.mkdir(exist_ok=True)
-
        base_name = Path(file_name).stem
        if not base_name.startswith("test_"):
            base_name = f"test_{base_name}"
@@ -195,6 +183,11 @@ Generate only the test code without any explanations or notes."""
            logging.info(f"Test cases saved to {test_file}")
        except Exception as e:
            logging.error(f"Error saving test cases to {test_file}: {e}")
+
+       if test_file.exists():
+           logging.info(f"File {test_file} exists with size {test_file.stat().st_size} bytes.")
+       else:
+           logging.error(f"File {test_file} was not created.")
 
    def run(self):
        """Main execution method."""
