@@ -1,0 +1,21 @@
+commit-test-case-generator/
+    calc.py
+    generate_tests.py
+    repo_structure.txt
+    structure.py
+    .git/
+        hooks/
+        info/
+        logs/
+        objects/
+        refs/
+    .github/
+        workflows/
+    .pytest_cache/
+        README.md
+        v/
+    venv/
+        Include/
+        Lib/
+        Scripts/
+    __pycache__/
