@@ -157,7 +157,7 @@ class TestGenerator:
             return None
 
         # Gather additional context from related files
-        related_files = self.get_related_files(file_name)
+        related_files = self.get_related_files(language, file_name)
         related_content = ""
         
         # Log related files to confirm detection
