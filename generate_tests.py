@@ -57,49 +57,95 @@ class TestGenerator:
            'C#': 'NUnit'
        }
        return frameworks.get(language, 'unknown')
-
-   def get_related_files(self, file_name: str) -> List[str]:
-        """Identify related files based on import statements or includes, including from other directories."""
-        related_files = []
-        current_dir = Path(file_name).parent
-
-        try:
-            with open(file_name, 'r') as f:
-                for line in f:
-                    # Detecting imports
-                    if 'import ' in line or 'from ' in line:
-                        parts = line.split()
-                        if 'from' in parts:
-                            # Handle from imports (e.g., from module import something)
-                            index = parts.index('from') + 1
-                            if index < len(parts):
-                                module_name = parts[index].strip()
-                                potential_file = current_dir.joinpath(*module_name.split('.'))
-                                for ext in ('.py', '.js', '.ts', '.java', '.cpp', '.cs'):
-                                    file_path = potential_file.with_suffix(ext)
-                                    if file_path.exists():
-                                        related_files.append(str(file_path))
-                                        logging.info(f"Found related file for 'from {module_name}': {file_path}")
-                                        break  # Stop checking extensions once we find a match
-
-                        if 'import' in parts:
-                            # Handle normal imports (e.g., import module)
+   
+   def get_related_files(self, language: str, file_name: str) -> List[str]:
+       """Identify related files based on import statements or includes."""
+       related_files = []
+       
+       try:
+            if (language=="Python" or language =='JavaScript' or language =='TypeScript'):
+                with open(file_name, 'r') as f:
+                    for line in f:
+                        # Example: Detecting imports in Python and JavaScript/TypeScript
+                        if 'import ' in line or 'from ' in line or 'require(' in line:
+                            parts = line.split()
+                            ##need to add in the . now
                             for part in parts:
-                                if part.startswith('import'):
-                                    module_name = part.split()[1].strip()  # Get module name
-                                    potential_file = current_dir.joinpath(*module_name.split('.'))
-                                    for ext in ('.py', '.js', '.ts', '.java', '.cpp', '.cs'):
-                                        file_path = potential_file.with_suffix(ext)
-                                        if file_path.exists():
-                                            related_files.append(str(file_path))
-                                            logging.info(f"Found related file for 'import {module_name}': {file_path}")
-                                            break  # Stop checking extensions once we find a match
+                                # Check for file extensions
+                                if '.' in part:
+                                    path = part.replace(".","/")
+                                    for ext in ('.py', '.js', '.ts'):
+                                        potential_file = f"{path}{ext}"
+                                        if Path(potential_file).exists():
+                                            related_files.append(potential_file)
+                                            break  # 
+                                else:
+                                    if part.endswith(('.py', '.js', '.ts')) and Path(part).exists():
+                                        related_files.append(part)
+                                        
+                                        # Check for class/module names without extensions
+                                    elif part.isidentifier():  # Checks if part is a valid identifier
+                                        # Construct potential file names
+                                        base_name = part.lower()  # Assuming file names are in lowercase
+                                        for ext in ('.py', '.js', '.ts'):
+                                            potential_file = f"{base_name}{ext}"
+                                            if Path(potential_file).exists():
+                                                related_files.append(potential_file)
+                                                break  # Found a related file, no need to check further extensions
+                                
+            elif (language =='C++'):
+                return [] #need to code this 
+            elif (language =='C#'):
+                return [] #need to code this 
 
-        except Exception as e:
+       except Exception as e:
             logging.error(f"Error identifying related files in {file_name}: {e}")
+       print("related FILES HERE "+ ', '.join(related_files) + "\n")
+       return related_files  # List
+       
 
-        return list(set(related_files))  # Remove duplicates
 
+#    def get_related_files(self, file_name: str) -> List[str]:
+#         """Identify related files based on import statements or includes, including from other directories."""
+#         related_files = []
+#         current_dir = Path(file_name).parent
+
+#         try:
+#             with open(file_name, 'r') as f:
+#                 for line in f:
+#                     # Detecting imports
+#                     if 'import ' in line or 'from ' in line:
+#                         parts = line.split()
+#                         if 'from' in parts:
+#                             # Handle from imports (e.g., from module import something)
+#                             index = parts.index('from') + 1
+#                             if index < len(parts):
+#                                 module_name = parts[index].strip()
+#                                 potential_file = current_dir.joinpath(*module_name.split('.'))
+#                                 for ext in ('.py', '.js', '.ts', '.java', '.cpp', '.cs'):
+#                                     file_path = potential_file.with_suffix(ext)
+#                                     if file_path.exists():
+#                                         related_files.append(str(file_path))
+#                                         logging.info(f"Found related file for 'from {module_name}': {file_path}")
+#                                         break  # Stop checking extensions once we find a match
+
+#                         if 'import' in parts:
+#                             # Handle normal imports (e.g., import module)
+#                             for part in parts:
+#                                 if part.startswith('import'):
+#                                     module_name = part.split()[1].strip()  # Get module name
+#                                     potential_file = current_dir.joinpath(*module_name.split('.'))
+#                                     for ext in ('.py', '.js', '.ts', '.java', '.cpp', '.cs'):
+#                                         file_path = potential_file.with_suffix(ext)
+#                                         if file_path.exists():
+#                                             related_files.append(str(file_path))
+#                                             logging.info(f"Found related file for 'import {module_name}': {file_path}")
+#                                             break  # Stop checking extensions once we find a match
+
+#         except Exception as e:
+#             logging.error(f"Error identifying related files in {file_name}: {e}")
+
+#         return list(set(related_files))  # Remove duplicates
 
    def create_prompt(self, file_name: str, language: str) -> Optional[str]:
         """Create a language-specific prompt for test generation."""
@@ -244,7 +290,7 @@ class TestGenerator:
                prompt = self.create_prompt(file_name, language)
                
                if prompt:
-                   test_cases = self.call_openai_api(prompt)
+                   #test_cases = self.call_openai_api(prompt)
                    
                    if test_cases:
                        test_cases = test_cases.replace("“", '"').replace("”", '"')
