@@ -15,7 +15,7 @@ def list_files(startpath, max_depth, file_extensions):
 
 if __name__ == '__main__':
     repo_path = r'C:\Users\ashle\Documents\GitHub\commit-test-case-generator'
-    max_depth = 2  # Change this value to limit depth
+    max_depth = 3  # Change this value to limit depth
     file_extensions = [
         '.py',   # Python files
         '.js',   # JavaScript files

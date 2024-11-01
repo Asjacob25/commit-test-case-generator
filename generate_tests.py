@@ -59,20 +59,33 @@ class TestGenerator:
        return frameworks.get(language, 'unknown')
 
    def get_related_files(self, file_name: str) -> List[str]:
-       """Identify related files based on import statements or includes."""
-       related_files = []
-       try:
-           with open(file_name, 'r') as f:
-               for line in f:
-                   # Example: Detecting imports in Python and JavaScript/TypeScript
-                   if 'import ' in line or 'from ' in line:
-                       parts = line.split()
-                       for part in parts:
-                           if part.endswith(('.py', '.js', '.ts', '.java', '.cpp', '.cs')) and Path(part).exists():
-                               related_files.append(part)
-       except Exception as e:
-           logging.error(f"Error identifying related files in {file_name}: {e}")
-       return list(set(related_files))  # Remove duplicates
+        """Identify related files based on import statements or includes."""
+        related_files = []
+        try:
+            with open(file_name, 'r') as f:
+                for line in f:
+                    # Example: Detecting imports in Python and JavaScript/TypeScript
+                    if 'import ' in line or 'from ' in line or 'require(' in line:
+                        parts = line.split()
+                        for part in parts:
+                            # Check for file extensions
+                            if part.endswith(('.py', '.js', '.ts', '.java', '.cpp', '.cs')) and Path(part).exists():
+                                related_files.append(part)
+                            # Check for class/module names without extensions
+                            elif part.isidentifier():  # Checks if part is a valid identifier
+                                # Construct potential file names
+                                base_name = part.lower()  # Assuming file names are in lowercase
+                                for ext in ('.py', '.js', '.ts', '.java', '.cpp', '.cs'):
+                                    potential_file = f"{base_name}{ext}"
+                                    if Path(potential_file).exists():
+                                        related_files.append(potential_file)
+                                        break  # Found a related file, no need to check further extensions
+
+        except Exception as e:
+            logging.error(f"Error identifying related files in {file_name}: {e}")
+
+        return list(set(related_files))  # Remove duplicates
+
 
    def create_prompt(self, file_name: str, language: str) -> Optional[str]:
         """Create a language-specific prompt for test generation."""
