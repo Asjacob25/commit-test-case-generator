@@ -75,49 +75,59 @@ class TestGenerator:
        return list(set(related_files))  # Remove duplicates
 
    def create_prompt(self, file_name: str, language: str) -> Optional[str]:
-       """Create a language-specific prompt for test generation."""
-       try:
-           with open(file_name, 'r') as f:
-               code_content = f.read()
-       except Exception as e:
-           logging.error(f"Error reading file {file_name}: {e}")
-           return None
+        """Create a language-specific prompt for test generation."""
+        try:
+            with open(file_name, 'r') as f:
+                code_content = f.read()
+        except Exception as e:
+            logging.error(f"Error reading file {file_name}: {e}")
+            return None
 
-       # Gather additional context from related files
-       related_files = self.get_related_files(file_name)
-       related_content = ""
-       for related_file in related_files:
-           try:
-               with open(related_file, 'r') as rf:
-                   related_content += f"\n\n// Related file: {related_file}\n" + rf.read()
-           except Exception as e:
-               logging.error(f"Error reading related file {related_file}: {e}")
+        # Gather additional context from related files
+        related_files = self.get_related_files(file_name)
+        related_content = ""
+        
+        # Log related files to confirm detection
+        if related_files:
+            logging.info(f"Related files for {file_name}: {related_files}")
+        else:
+            logging.info(f"No related files found for {file_name}")
+        
+        for related_file in related_files:
+            try:
+                with open(related_file, 'r') as rf:
+                    file_content = rf.read()
+                    related_content += f"\n\n// Related file: {related_file}\n{file_content}"
+                    logging.info(f"Included content from related file: {related_file}")
+            except Exception as e:
+                logging.error(f"Error reading related file {related_file}: {e}")
 
-       framework = self.get_test_framework(language)
-       
-       prompt = f"""Generate comprehensive unit tests for the following {language} code using {framework}.
+        framework = self.get_test_framework(language)
+        
+        prompt = f"""Generate comprehensive unit tests for the following {language} code using {framework}.
 
-Requirements:
-1. Include edge cases, normal cases, and error cases
-2. Use mocking where appropriate for external dependencies
-3. Include setup and teardown if needed
-4. Add descriptive test names and docstrings
-5. Follow {framework} best practices
-6. Ensure high code coverage
-7. Test both success and failure scenarios
+        Requirements:
+        1. Include edge cases, normal cases, and error cases
+        2. Use mocking where appropriate for external dependencies
+        3. Include setup and teardown if needed
+        4. Add descriptive test names and docstrings
+        5. Follow {framework} best practices
+        6. Ensure high code coverage
+        7. Test both success and failure scenarios
 
-Code to test:
+        Code to test:
 
-{code_content}
+        {code_content}
 
-Related context:
+        Related context:
 
-{related_content}
+        {related_content}
 
-Generate only the test code without any explanations or notes."""
+        Generate only the test code without any explanations or notes."""
 
-       logging.info(f"Created prompt for {language} using {framework}. Length: {len(prompt)} characters")
-       return prompt
+        # Log the length of the final prompt to verify related content inclusion
+        logging.info(f"Created prompt for {file_name} with length {len(prompt)} characters")
+        return prompt
 
    def call_openai_api(self, prompt: str) -> Optional[str]:
        """Call OpenAI API to generate test cases."""

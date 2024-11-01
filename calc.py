@@ -7,8 +7,8 @@ def subtract(x, y):
 def multiply(x, y):
     return x * y
 
-def minusOne(x):
-    return x-1
+def power(x, y):
+    return x**y
 
 def divide(x, y):
     if y == 0:
