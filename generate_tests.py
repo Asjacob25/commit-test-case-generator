@@ -57,8 +57,20 @@ class TestGenerator:
            'C#': 'NUnit'
        }
        return frameworks.get(language, 'unknown')
-
+   
+   def resolve_import(self, module_name: str, current_file: str) -> Optional[str]:
+        """Resolve the import statement to find the corresponding file."""
+        current_dir = Path(current_file).parent
+        # Convert the module name to a path
+        module_parts = module_name.split('.')
+        potential_file = current_dir.joinpath(*module_parts)  # Join the directory and module parts
+        for ext in ('.py', '.js', '.ts', '.java', '.cpp', '.cs'):
+            if (potential_file.with_suffix(ext).exists()):
+                return str(potential_file.with_suffix(ext))  # Return the found file
+        return None
+   
    def get_related_files(self, file_name: str) -> List[str]:
+        """Identify related files based on import statements or includes, including from other directories."""
         """Identify related files based on import statements or includes, including from other directories."""
         related_files = []
         current_dir = Path(file_name).parent
@@ -245,6 +257,7 @@ class TestGenerator:
                prompt = self.create_prompt(file_name, language)
                
                if prompt:
+                   #test_cases = self.call_openai_api(prompt)
                    #test_cases = self.call_openai_api(prompt)
                    
                    if test_cases:
