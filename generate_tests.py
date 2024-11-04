@@ -104,49 +104,6 @@ class TestGenerator:
        return related_files  # List
        
 
-
-#    def get_related_files(self, file_name: str) -> List[str]:
-#         """Identify related files based on import statements or includes, including from other directories."""
-#         related_files = []
-#         current_dir = Path(file_name).parent
-
-#         try:
-#             with open(file_name, 'r') as f:
-#                 for line in f:
-#                     # Detecting imports
-#                     if 'import ' in line or 'from ' in line:
-#                         parts = line.split()
-#                         if 'from' in parts:
-#                             # Handle from imports (e.g., from module import something)
-#                             index = parts.index('from') + 1
-#                             if index < len(parts):
-#                                 module_name = parts[index].strip()
-#                                 potential_file = current_dir.joinpath(*module_name.split('.'))
-#                                 for ext in ('.py', '.js', '.ts', '.java', '.cpp', '.cs'):
-#                                     file_path = potential_file.with_suffix(ext)
-#                                     if file_path.exists():
-#                                         related_files.append(str(file_path))
-#                                         logging.info(f"Found related file for 'from {module_name}': {file_path}")
-#                                         break  # Stop checking extensions once we find a match
-
-#                         if 'import' in parts:
-#                             # Handle normal imports (e.g., import module)
-#                             for part in parts:
-#                                 if part.startswith('import'):
-#                                     module_name = part.split()[1].strip()  # Get module name
-#                                     potential_file = current_dir.joinpath(*module_name.split('.'))
-#                                     for ext in ('.py', '.js', '.ts', '.java', '.cpp', '.cs'):
-#                                         file_path = potential_file.with_suffix(ext)
-#                                         if file_path.exists():
-#                                             related_files.append(str(file_path))
-#                                             logging.info(f"Found related file for 'import {module_name}': {file_path}")
-#                                             break  # Stop checking extensions once we find a match
-
-#         except Exception as e:
-#             logging.error(f"Error identifying related files in {file_name}: {e}")
-
-#         return list(set(related_files))  # Remove duplicates
-
    def create_prompt(self, file_name: str, language: str) -> Optional[str]:
         """Create a language-specific prompt for test generation with accurate module and import names in related content."""
         try:
