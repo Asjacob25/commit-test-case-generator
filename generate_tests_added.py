@@ -173,7 +173,7 @@ class TestGenerator:
         return limited_test_files  # List
        
 
-   def create_prompt(self, file_name: str, language: str) -> Optional[str]:
+   def create_prompt(self, file_name: str, language: str, specific_requests: Optional[str] = None) -> Optional[str]:
         """Create a language-specific prompt for test generation with accurate module and import names in related content."""
         try:
             with open(file_name, 'r') as f:
@@ -229,7 +229,12 @@ class TestGenerator:
         4. Add descriptive test names and docstrings.
         5. Follow {framework} best practices.
         6. Ensure high code coverage.
-        7. Test both success and failure scenarios.
+        7. Test both success and failure scenarios."""
+
+        if specific_requests:
+            prompt += f"\n\nAdditional requests from user: {specific_requests}"
+
+        prompt += f"""
 
         Code to test (File: {file_name}):
 
@@ -319,7 +324,7 @@ class TestGenerator:
        else:
            logging.error(f"File {test_file} was not created.")
 
-   def run(self):
+   def run(self, specific_requests=None):
        """Main execution method."""
        changed_files = self.get_changed_files()
        if not changed_files:
@@ -335,7 +340,7 @@ class TestGenerator:
                     continue
 
                 logging.info(f"Processing {file_name} ({language})")
-                prompt = self.create_prompt(file_name, language)
+                prompt = self.create_prompt(file_name, language, specific_requests)
                 
                 if prompt:
                     test_cases = self.call_openai_api(prompt)
@@ -350,8 +355,9 @@ class TestGenerator:
 
 if __name__ == '__main__':
    try:
+       specific_requests = input("Enter any specific requests for test case creation (or press Enter to skip): ")
        generator = TestGenerator()
-       generator.run()
+       generator.run(specific_requests)
    except Exception as e:
        logging.error(f"Fatal error: {e}")
        sys.exit(1)
