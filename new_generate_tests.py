@@ -290,7 +290,7 @@ class TestGenerator:
                             
                             # Call run_tests with the base file name
                             #base_file_name = Path(file_name).stem  # Get the base name without extension
-                            test_results = self.run_tests(language, "test_operations.py")
+                            test_results = self.run_tests(language, "test_operations")
                             
                             refined_test_cases = self.refine_test_cases(test_results)
                             
