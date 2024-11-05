@@ -212,7 +212,7 @@ class TestGenerator:
         # Determine the test file extension based on the programming language
         if language == 'Python':
             test_file = f"{base_file_name}.py"
-            command = ['pytest', test_file, '--tb=short']
+            command = ['pytest', '-s', test_file, '--tb=short']
         elif language in ['JavaScript', 'TypeScript']:
             test_file = f"{base_file_name}.js"
             command = ['npm', 'test', '--', test_file]
