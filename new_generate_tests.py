@@ -287,7 +287,8 @@ class TestGenerator:
                         
                         if initial_test_cases:
                             # Save initial test cases outside the generated_tests directory
-                            self.save_test_cases(file_name, initial_test_cases, language, initial=True)
+                            test_file_name = "test_"+file_name
+                            self.save_test_cases(test_file_name, initial_test_cases, language, initial=True)
                             
                             # Call run_tests with the base file name
                             base_file_name = Path(file_name).stem  # Get the base name without extension
