@@ -212,7 +212,7 @@ class TestGenerator:
         # Determine the test file extension based on the programming language
         if language == 'Python':
             test_file = f"{base_file_name}.py"
-            command = ['pytest', '-s', test_file, '--tb=short']
+            command = ['pytest', test_file, '--tb=short']
         elif language in ['JavaScript', 'TypeScript']:
             test_file = f"{base_file_name}.js"
             command = ['npm', 'test', '--', test_file]
@@ -290,7 +290,7 @@ class TestGenerator:
                             
                             # Call run_tests with the base file name
                             #base_file_name = Path(file_name).stem  # Get the base name without extension
-                            test_results = self.run_tests(language, "tests_calc")
+                            test_results = self.run_tests(language, "test_operations.py")
                             
                             refined_test_cases = self.refine_test_cases(test_results)
                             
