@@ -244,6 +244,7 @@ class TestGenerator:
         try:
             if language == 'Python':
                 subprocess.run(['pip', 'install', 'pytest'], check=True)
+                logging.info("installed pytest")
             elif language in ['JavaScript', 'TypeScript']:
                 subprocess.run(['npm', 'install', '--save-dev', 'jest'], check=True)
             elif language == 'Java':

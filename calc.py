@@ -9,7 +9,7 @@ def calculator():
     print("5. Power")
 
     choice = input("Enter choice (1/2/3/4/5): ")
-    #testinggg
+    #testingggg
 
     if choice in ['1', '2', '3', '4', '5']:
         try:
