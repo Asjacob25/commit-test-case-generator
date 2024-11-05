@@ -243,10 +243,8 @@ class TestGenerator:
         """Install necessary test packages based on the language."""
         try:
             if language == 'Python':
-                result = subprocess.run(['pip', 'install', 'pytest'], check=True, capture_output=True, text=True)
-                logging.info("Installed pytest")
-                logging.info(f"Output: {result.stdout}")
-                logging.info(f"Errors (if any): {result.stderr}")
+                subprocess.run(['pip', 'install', 'pytest'], check=True)
+                logging.info("installed pytest")
             elif language in ['JavaScript', 'TypeScript']:
                 subprocess.run(['npm', 'install', '--save-dev', 'jest'], check=True)
             elif language == 'Java':
@@ -291,7 +289,7 @@ class TestGenerator:
                             
                             # Call run_tests with the base file name
                             #base_file_name = Path(file_name).stem  # Get the base name without extension
-                            test_results = self.run_tests(language, "generate_tests/python/tests_calc")
+                            test_results = self.run_tests(language, "tests_calc")
                             
                             refined_test_cases = self.refine_test_cases(test_results)
                             
