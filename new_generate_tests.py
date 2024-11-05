@@ -238,7 +238,7 @@ class TestGenerator:
         except subprocess.CalledProcessError as e:
             logging.error(f"Error running tests: {e}")
             logging.error(f"Error running tests:\nstdout:\n{e.stdout}\nstderr:\n{e.stderr}")
-            return f"Error running tests: {e.stderr}"
+            return f"Error running tests:\nstdout:\n{e.stdout}\nstderr:\n{e.stderr}"
 
     def install_test_package(self, language: str):
         """Install necessary test packages based on the language."""
@@ -283,6 +283,7 @@ class TestGenerator:
                     
                     if prompt:
                         initial_test_cases = self.call_openai_api(prompt)
+                        logging.info(f"these are the initial test cases: {initial_test_cases}")
                         
                         if initial_test_cases:
                             # Save initial test cases outside the generated_tests directory
@@ -291,8 +292,11 @@ class TestGenerator:
                             # Call run_tests with the base file name
                             base_file_name = Path(file_name).stem  # Get the base name without extension
                             test_results = self.run_tests(language, base_file_name)
+                            logging.info(f"these are the test results: {test_results}")
                             
                             refined_test_cases = self.refine_test_cases(test_results)
+                            logging.info(f"these are the refined tests: {refined_test_cases}")
+
                             
                             if refined_test_cases:
                                 # Save refined test cases in the generated_tests directory
