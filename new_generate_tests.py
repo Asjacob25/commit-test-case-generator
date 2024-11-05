@@ -236,7 +236,7 @@ class TestGenerator:
             logging.info("Tests executed successfully.")
             return result.stdout + "\n" + result.stderr
         except subprocess.CalledProcessError as e:
-            logging.error(f"Error running tests: {e.stderr}")
+            logging.error(f"Error running tests: {e}")
             return f"Error running tests: {e.stderr}"
 
     def install_test_package(self, language: str):
