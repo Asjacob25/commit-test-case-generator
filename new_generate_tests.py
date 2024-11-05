@@ -177,8 +177,10 @@ class TestGenerator:
         """Refine test cases based on test run results."""
         followup_prompt = f"Here are the test results:\n{test_results}. Please improve the test cases to cover any failed or missed scenarios."
         self.conversation.append({"role": "user", "content": followup_prompt})  # Add follow-up message to context
-        refined_test_cases = self.call_openai_api(followup_prompt)
-        return refined_test_cases
+        #refined_test_cases = self.call_openai_api(followup_prompt)
+        #return refined_test_cases
+        logging.info("got to refined test cases")
+        return "got to refined test cases"
 
     def save_test_cases(self, file_name: str, test_cases: str, language: str, initial: bool = False):
         """Save generated or refined test cases."""
@@ -263,39 +265,40 @@ class TestGenerator:
             return
 
         for file_name in changed_files:
-            try:
-                language = self.detect_language(file_name)
-                if language == 'Unknown':
-                    logging.warning(f"Unsupported file type: {file_name}")
-                    continue
+            if file_name != "new_generate_tests.py":
+                try:
+                    language = self.detect_language(file_name)
+                    if language == 'Unknown':
+                        logging.warning(f"Unsupported file type: {file_name}")
+                        continue
 
-                logging.info(f"Processing {file_name} ({language})")
-                
-                # Install the necessary test package for the language
-                self.install_test_package(language)
-
-                prompt = self.create_prompt(file_name, language)
-                
-                if prompt:
-                    initial_test_cases = self.call_openai_api(prompt)
+                    logging.info(f"Processing {file_name} ({language})")
                     
-                    if initial_test_cases:
-                        # Save initial test cases outside the generated_tests directory
-                        self.save_test_cases(file_name, initial_test_cases, language, initial=True)
+                    # Install the necessary test package for the language
+                    self.install_test_package(language)
+
+                    prompt = self.create_prompt(file_name, language)
+                    
+                    if prompt:
+                        #initial_test_cases = self.call_openai_api(prompt) COMMENTED
                         
-                        # Call run_tests with the base file name
-                        base_file_name = Path(file_name).stem  # Get the base name without extension
-                        test_results = self.run_tests(language, base_file_name)
-                        
-                        refined_test_cases = self.refine_test_cases(test_results)
-                        
-                        if refined_test_cases:
-                            # Save refined test cases in the generated_tests directory
-                            self.save_test_cases(file_name, refined_test_cases, language, initial=False)
-                    else:
-                        logging.error(f"Failed to generate test cases for {file_name}")
-            except Exception as e:
-                logging.error(f"Error processing {file_name}: {e}")
+                        if True:
+                            # Save initial test cases outside the generated_tests directory
+                            #self.save_test_cases(file_name, initial_test_cases, language, initial=True)
+                            
+                            # Call run_tests with the base file name
+                            #base_file_name = Path(file_name).stem  # Get the base name without extension
+                            test_results = self.run_tests(language, "tests_calc")
+                            
+                            refined_test_cases = self.refine_test_cases(test_results)
+                            
+                            if refined_test_cases:
+                                # Save refined test cases in the generated_tests directory
+                                self.save_test_cases(file_name, refined_test_cases, language, initial=False)
+                        else:
+                            logging.error(f"Failed to generate test cases for {file_name}")
+                except Exception as e:
+                    logging.error(f"Error processing {file_name}: {e}")
 
 if __name__ == "__main__":
     generator = TestGenerator()
