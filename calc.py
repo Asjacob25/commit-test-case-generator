@@ -1,4 +1,4 @@
-from operations import add, subtract, multiply, divide, power
+from utils.operations import add, subtract, multiply, divide, power
 
 def calculator():
     print("Select operation:")
