@@ -338,7 +338,7 @@ class TestGenerator:
                 prompt = self.create_prompt(file_name, language)
                 
                 if prompt:
-                    test_cases = self.call_openai_api(prompt)
+                    #test_cases = self.call_openai_api(prompt)
                     
                     if test_cases:
                         test_cases = test_cases.replace("“", '"').replace("”", '"')
