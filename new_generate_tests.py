@@ -188,7 +188,7 @@ class TestGenerator:
         if initial:
             # Determine the file extension based on the language
             extension = '.js' if language == 'JavaScript' else Path(file_name).suffix
-            test_file = f"{Path(file_name).stem}_initial_tests{extension}"  # Use correct extension
+            test_file = f"{Path(file_name).stem}_initial_test{extension}"  # Use correct extension
         else:
             tests_dir = Path('generated_tests')
             tests_dir.mkdir(exist_ok=True)
@@ -203,6 +203,8 @@ class TestGenerator:
         try:
             with open(test_file, 'w', encoding='utf-8') as f:
                 f.write(test_cases)
+                logging.info("we are writing a file somewhere")
+                logging.info(f"This is the path of the file: {Path(test_file)}")
             logging.info(f"Test cases saved to {test_file}")
         except Exception as e:
             logging.error(f"Error saving test cases to {test_file}: {e}")

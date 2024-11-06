@@ -1,35 +1,26 @@
-from utils.operations import add, subtract, multiply, divide, power
+# Basic Python Script: Simple Calculator
 
-def calculator():
-    print("Select operation:")
-    print("1. Add")
-    print("2. Subtract")
-    print("3. Multiply")
-    print("4. Divide")
-    print("5. Power")
 
-    choice = input("Enter choice (1/2/3/4/5): ")
-    #testingggg
 
-    if choice in ['1', '2', '3', '4', '5']:
-        try:
-            num1 = float(input("Enter first number: "))
-            num2 = float(input("Enter second number: "))
+def main():
 
-            if choice == '1':
-                print("Result:", add(num1, num2))
-            elif choice == '2':
-                print("Result:", subtract(num1, num2))
-            elif choice == '3':
-                print("Result:", multiply(num1, num2))
-            elif choice == '4':
-                print("Result:", divide(num1, num2))
-            elif choice == '5':
-                print("Result:", power(num1, num2))
+    #only changing this file
+    #yeeeee
+    #yaa
+    #yohhh
+    #yooooo
+    # Taking input from the user
+    num1 = float(input("Enter the first number: "))
+    num2 = float(input("Enter the second number: "))
 
-        except ValueError:
-            print("Invalid input. Please enter numbers only.")
-    else:
-        print("Invalid choice. Please select a valid option.")
+    # Simple operations
+    sum_result = num1 + num2
+    difference = num1 - num2
+    product = num1 * num2
+    quotient = num1 / num2 if num2 != 0 else "undefined (division by zero)"
 
-calculator()
+    # Displaying results
+    print(f"The sum is: {sum_result}")
+    print(f"The difference is: {difference}")
+    print(f"The product is: {product}")
+    print(f"The quotient is: {quotient}")
