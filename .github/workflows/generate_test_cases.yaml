@@ -5,7 +5,7 @@ on:
      - main
      - "feature/*"
      - withCoverage
-     
+
    paths:
      - '**.py'
      - '**.js'
