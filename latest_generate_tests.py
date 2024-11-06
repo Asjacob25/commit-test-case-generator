@@ -205,6 +205,51 @@ class TestGenerator:
 
         except subprocess.CalledProcessError as e:
             logging.error(f"Error generating coverage report for {test_file}: {e}")
+
+  def ensure_coverage_installed(language: str):
+        """
+        Ensures that the appropriate coverage tool for the given programming language is installed.
+        Logs messages for each step.
+        """
+        try:
+            if language.lower() == 'python':
+                # Check if 'coverage' is installed for Python
+                subprocess.check_call([sys.executable, '-m', 'pip', 'show', 'coverage'])
+                logging.info(f"Coverage tool for Python is already installed.")
+            elif language.lower() == 'javascript':
+                # Check if 'jest' coverage is available for JavaScript
+                subprocess.check_call(['npm', 'list', 'jest'])
+                logging.info(f"Coverage tool for JavaScript (jest) is already installed.")
+            elif language.lower() == 'java':
+                # Check if 'jacoco' is available for Java (typically part of the build process)
+                logging.info("Make sure Jacoco is configured in your Maven/Gradle build.")
+                # Optionally you can add a check for specific build tool (Maven/Gradle) commands here
+            elif language.lower() == 'ruby':
+                # Check if 'simplecov' is installed for Ruby
+                subprocess.check_call(['gem', 'list', 'simplecov'])
+                logging.info(f"Coverage tool for Ruby (simplecov) is already installed.")
+            else:
+                logging.warning(f"Coverage tool check is not configured for {language}. Please add it manually.")
+                return
+
+        except subprocess.CalledProcessError:
+            logging.error(f"Coverage tool for {language} is not installed. Installing...")
+
+            try:
+                if language.lower() == 'python':
+                    subprocess.check_call([sys.executable, '-m', 'pip', 'install', 'coverage'])
+                    logging.info(f"Coverage tool for Python has been installed.")
+                elif language.lower() == 'javascript':
+                    subprocess.check_call(['npm', 'install', 'jest'])
+                    logging.info(f"Coverage tool for JavaScript (jest) has been installed.")
+                elif language.lower() == 'ruby':
+                    subprocess.check_call(['gem', 'install', 'simplecov'])
+                    logging.info(f"Coverage tool for Ruby (simplecov) has been installed.")
+                else:
+                    logging.error(f"Could not install coverage tool for {language} automatically. Please install manually.")
+            except subprocess.CalledProcessError:
+                logging.error(f"Failed to install the coverage tool for {language}. Please install it manually.")
+
       
 
   def create_prompt(self, file_name: str, language: str) -> Optional[str]:
@@ -389,6 +434,8 @@ class TestGenerator:
                    if test_cases:
                        test_cases = test_cases.replace("“", '"').replace("”", '"')
                        self.save_test_cases(file_name, test_cases, language)
+
+                       self.ensure_coverage_installed(language)
 
                        test_file = self.save_test_cases(file_name, test_cases, language)
                        self.generate_coverage_report(test_file, language)
