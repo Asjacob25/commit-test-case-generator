@@ -315,9 +315,15 @@ class TestGenerator:
       extension = '.js' if language == 'JavaScript' else Path(file_name).suffix
       test_file = lang_dir / f"{base_name}{extension}"
 
+      header = (
+        "import sys\n"
+        "import os\n"
+        "sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), \"../..\")))\n\n"
+      )
+
       try:
           with open(test_file, 'w', encoding='utf-8') as f:
-              f.write(test_cases)
+              f.write(header + test_cases)
           logging.info(f"Test cases saved to {test_file}")
       except Exception as e:
           logging.error(f"Error saving test cases to {test_file}: {e}")
