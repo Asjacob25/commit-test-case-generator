@@ -5,7 +5,6 @@ from generated_tests.python.tictactoegame import TicTacToe
 def main():
 
     #only changing this file
-    #yeeeee
     #yaa
     #yohhh
     #yooooo
