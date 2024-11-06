@@ -161,11 +161,11 @@ class TestGenerator:
                                                 base_name = part.lower()  # Assuming file names are in lowercase
                                                 for ext in ('.py', '.js', '.ts','.js'):
                                                     potential_file = f"{base_name}{ext}"
-                                                #print(potential_file + "<-- from regular \n")
-                                                stringPotentialFile = str(potential_file)
-                                                if Path(file_name).exists() and (stringPotentialFile in str(file_name)):
-                                                    related_test_files.append(file)
-                                                    break  # Found a related file, no need to check further extensions
+                                                    #print(potential_file + "<-- from regular \n")
+                                                    stringPotentialFile = str(potential_file)
+                                                    if Path(file_name).exists() and (stringPotentialFile in str(file_name)):
+                                                        related_test_files.append(file)
+                                                        break  # Found a related file, no need to check further extensions
         except Exception as e:
             logging.error(f"Error identifying related test files in {file_name}: {e}")
        #print("related FILES HERE "+ ', '.join(related_files) + "\n")
