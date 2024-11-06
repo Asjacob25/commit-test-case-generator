@@ -4,6 +4,7 @@ on:
    branches:
      - main
      - "feature/*"
+     - ashley-br
    paths:
      - '**.py'
      - '**.js'
