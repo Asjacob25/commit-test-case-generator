@@ -1,4 +1,4 @@
-from utils.operations import add, subtract, multiply, divide, power
+from operations import add, subtract, multiply, divide, power
 
 def calculator():
     print("Select operation:")
@@ -9,7 +9,7 @@ def calculator():
     print("5. Power")
 
     choice = input("Enter choice (1/2/3/4/5): ")
-    #testing
+    #testingj
 
     if choice in ['1', '2', '3', '4', '5']:
         try:

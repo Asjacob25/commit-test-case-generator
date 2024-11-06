@@ -2,7 +2,7 @@
 import pytest
 from unittest.mock import patch
 from calc import calculator
-from utils.operations import add, subtract, multiply, divide, power
+from operations import add, subtract, multiply, divide, power
 
 @pytest.fixture
 def mock_input():
