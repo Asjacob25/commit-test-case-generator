@@ -1,3 +1,4 @@
+import subprocess
 import requests
 import os
 import sys
@@ -174,6 +175,36 @@ class TestGenerator:
       #print("related FILES HERE "+ ', '.join(related_files) + "\n")
        limited_test_files = related_test_files[:1]# List
        return limited_test_files  # List
+  
+  def generate_coverage_report(self, test_file: Path, language: str):
+        """Generate a code coverage report and save it as a text file."""
+        report_file = test_file.parent / "coverage_report.txt"
+
+        try:
+            # Run tests with coverage based on language
+            if language == "Python":
+                subprocess.run(
+                    ["coverage", "run", str(test_file)],
+                    check=True
+                )
+                subprocess.run(
+                    ["coverage", "report", "-m", "--omit=*/site-packages/*"],
+                    stdout=open(report_file, "w"),
+                    check=True
+                )
+            elif language == "JavaScript":
+                # Example for JavaScript - replace with the specific coverage tool and command
+                subprocess.run(
+                    ["jest", "--coverage", "--config=path/to/jest.config.js"],
+                    stdout=open(report_file, "w"),
+                    check=True
+                )
+            # Add additional commands for other languages here
+
+            logging.info(f"Code coverage report saved to {report_file}")
+
+        except subprocess.CalledProcessError as e:
+            logging.error(f"Error generating coverage report for {test_file}: {e}")
       
 
   def create_prompt(self, file_name: str, language: str) -> Optional[str]:
@@ -302,7 +333,7 @@ class TestGenerator:
       except RequestException as e:
           logging.error(f"API request failed: {e}")
           return None
-
+      
   def save_test_cases(self, file_name: str, test_cases: str, language: str):
       """Save generated test cases to appropriate directory structure."""
       tests_dir = Path('generated_tests')
@@ -332,6 +363,7 @@ class TestGenerator:
           logging.info(f"File {test_file} exists with size {test_file.stat().st_size} bytes.")
       else:
           logging.error(f"File {test_file} was not created.")
+      return test_file
 
   def run(self):
       """Main execution method."""
@@ -357,6 +389,9 @@ class TestGenerator:
                    if test_cases:
                        test_cases = test_cases.replace("“", '"').replace("”", '"')
                        self.save_test_cases(file_name, test_cases, language)
+
+                       test_file = self.save_test_cases(file_name, test_cases, language)
+                       self.generate_coverage_report(test_file, language)
                    else:
                        logging.error(f"Failed to generate test cases for {file_name}")
            except Exception as e:
