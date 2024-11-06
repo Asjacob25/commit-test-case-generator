@@ -206,7 +206,7 @@ class TestGenerator:
         except subprocess.CalledProcessError as e:
             logging.error(f"Error generating coverage report for {test_file}: {e}")
 
-  def ensure_coverage_installed(language: str):
+  def ensure_coverage_installed(self, language: str):
         """
         Ensures that the appropriate coverage tool for the given programming language is installed.
         Logs messages for each step.
