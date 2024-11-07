@@ -1,11 +1,10 @@
 import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
+
 import pytest
 from unittest.mock import patch
-#from calculator import main  # Assuming the given code is saved in calculator
 from calc import main
-
 
 # Helper function to simulate input for main()
 def mock_inputs(inputs):
@@ -71,5 +70,3 @@ def test_division_by_zero(input_values):
     with mock_inputs(input_values), mock_print() as mocked_print:
         main()
         mocked_print.assert_any_call(expected_output)
-
-#This test suite covers normal, edge, and error cases for the simple calculator script, including mocking user inputs and print statements to validate output without needing user interaction. It also handles division by zero and input type errors effectively.
