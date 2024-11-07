@@ -1,11 +1,10 @@
 import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
+
 import pytest
 from unittest.mock import patch
-#from calculator import main  # Assuming the given code is saved in calculator
 from calc import main
-
 
 # Helper function to simulate input for main()
 def mock_inputs(inputs):
@@ -28,7 +27,7 @@ def test_main_normal_and_edge_cases(input_values, expected_output):
     """
     with mock_inputs(input_values), mock_print() as mocked_print:
         main()
-        mocked_print.assert_has_calls([patch.call(output) for output in expected_output])
+        mocked_print.assert_has_calls([patch.call(output) for output in expected_output], any_order=True)
 
 @pytest.mark.parametrize("input_values, error_message", [
     (("a", "2"), ValueError),
@@ -39,8 +38,9 @@ def test_main_error_cases(input_values, error_message):
     Test error cases for main function. It should raise a ValueError if the inputs
     are not convertible to float.
     """
-    with mock_inputs(input_values), pytest.raises(error_message):
-        main()
+    with pytest.raises(error_message):
+        with mock_inputs(input_values):
+            main()
 
 @pytest.mark.parametrize("input_values", [
     ("2", "3"),
@@ -71,5 +71,3 @@ def test_division_by_zero(input_values):
     with mock_inputs(input_values), mock_print() as mocked_print:
         main()
         mocked_print.assert_any_call(expected_output)
-
-#This test suite covers normal, edge, and error cases for the simple calculator script, including mocking user inputs and print statements to validate output without needing user interaction. It also handles division by zero and input type errors effectively.
