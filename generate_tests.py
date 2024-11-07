@@ -178,7 +178,7 @@ class TestGenerator:
   
   def generate_coverage_report(self, test_file: Path, language: str):
         """Generate a code coverage report and save it as a text file."""
-        report_file = test_file.parent / "coverage_report.txt"
+        report_file = test_file.parent / f"{test_file.stem}_coverage_report.txt"
 
         try:
             # Run tests with coverage based on language
@@ -391,11 +391,20 @@ class TestGenerator:
       extension = '.js' if language == 'JavaScript' else Path(file_name).suffix
       test_file = lang_dir / f"{base_name}{extension}"
 
-      header = (
-        "import sys\n"
-        "import os\n"
-        "sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), \"../..\")))\n\n"
-      )
+      header = ""
+
+      if language.lower() == 'python':
+          header = (
+                "import sys\n"
+                "import os\n"
+                "sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), \"../..\")))\n\n"
+            )
+      elif language.lower() == 'go':
+          #add stuff for go
+          logging.info("go unwritten code for save_test_cases")
+          
+
+      
 
       try:
           with open(test_file, 'w', encoding='utf-8') as f:
@@ -418,7 +427,7 @@ class TestGenerator:
           return
 
       for file_name in changed_files:
-          if (file_name!="generate_tests.py"):
+          if (file_name!="latest_generate_tests.py"):
            try:
                language = self.detect_language(file_name)
                if language == 'Unknown':
@@ -433,7 +442,7 @@ class TestGenerator:
                    
                    if test_cases:
                        test_cases = test_cases.replace("“", '"').replace("”", '"')
-                       self.save_test_cases(file_name, test_cases, language)
+                       #self.save_test_cases(file_name, test_cases, language)
 
                        self.ensure_coverage_installed(language)
 
